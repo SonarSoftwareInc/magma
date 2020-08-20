@@ -66,6 +66,8 @@ To deploy the net template, you can use the command below to validate and then c
 
 `az deployment group validate --template-file .\magma\orc8r\cloud\deploy\azure\arm_templates\net_template.json --parameters .\magma\orc8r\cloud\deploy\azure\arm_templates\net_template.parameters.json -g myorg-prod-magma`
 
+The other Azure resources are deployed from the "generic" ARM template.  The generic template parameters references the Key Vault secrets that were created previously.  You must edit the parameters file and replace the subscription ids, resource group names, and Key Vault instance names to point to the instance of Key Vault that were created by the script earlier.
+
 To deploy the generic template, use the command below to validate and then change `validate` to `deploy` when ready to deploy:
 
 `az deployment group validate --template-file .\magma\orc8r\cloud\deploy\azure\arm_templates\gen_template.json --parameters .\magma\orc8r\cloud\deploy\azure\arm_templates\gen_template.parameters.json -g myorg-prod-magma`
