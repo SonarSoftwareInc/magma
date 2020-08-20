@@ -11,7 +11,7 @@
     "postgresdb_admin_password": {
       "reference": {
         "keyVault": {
-        "id": "/subscriptions/53d25eb2-0006-42be-bc4b-27a5906cf9ce/resourceGroups/sonar-prod-magma/providers/Microsoft.KeyVault/vaults/sonar-prod-magma-kv-1"
+        "id": "/subscriptions/53d25eb2-0006-42be-bc4b-27a5906cf9ce/resourceGroups/sonar-prod-magma/providers/Microsoft.KeyVault/vaults/sonar-prod-magma-01"
         },
         "secretName": "ControllerDBPass"
       }
@@ -25,7 +25,7 @@
     "mysqldb_admin_password": {
       "reference": {
         "keyVault": {
-        "id": "/subscriptions/53d25eb2-0006-42be-bc4b-27a5906cf9ce/resourceGroups/sonar-prod-magma/providers/Microsoft.KeyVault/vaults/sonar-prod-magma-kv-1"
+        "id": "/subscriptions/53d25eb2-0006-42be-bc4b-27a5906cf9ce/resourceGroups/sonar-prod-magma/providers/Microsoft.KeyVault/vaults/sonar-prod-magma-01"
         },
         "secretName": "MagmaLTEDBPass"
       }
