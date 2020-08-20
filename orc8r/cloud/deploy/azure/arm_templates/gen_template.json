@@ -42,6 +42,14 @@
             "type": "string",
             "defaultValue": "orc8r"
         },
+        "postgresqlPrivateLinkName": {
+            "type": "string",
+            "defaultValue": "postgresql-privatelink"
+        },
+        "mySqlPrivateLinkName": {
+            "type": "string",
+            "defaultValue": "mysql-privatelink"
+        },
         "virtualNetwork_resourceGroup": {
             "type": "string"
         },
@@ -197,7 +205,9 @@
         }
     },
     "variables": {
-        "vnet_subnet_id": "[resourceId(parameters('virtualNetwork_resourceGroup'),'Microsoft.Network/virtualNetworks/subnets',parameters('virtualNetwork_name'),parameters('virtualNetwork_aksSubnet'))]"
+        "vnet_subnet_id": "[resourceId(parameters('virtualNetwork_resourceGroup'),'Microsoft.Network/virtualNetworks/subnets',parameters('virtualNetwork_name'),parameters('virtualNetwork_aksSubnet'))]",
+        "posgrePrivateDnsZoneName": "privatelink.postgres.database.azure.com",
+        "mySQLPrivateDnsZoneName": "privatelink.mysql.database.azure.com"
     },
     "resources": [
         {
@@ -313,6 +323,7 @@
                 "administratorLogin": "[parameters('mysqldb_admin_login')]",
                 "administratorLoginPassword": "[parameters('mysqldb_admin_password')]",
                 "sslEnforcement": "Disabled",
+                "publicNetworkAccess": "Disabled",
                 "storageProfile": {
                     "storageMB": 5120,
                     "backupRetentionDays": 14,
@@ -353,6 +364,7 @@
                 "administratorLogin": "[parameters('postgresdb_admin_login')]",
                 "administratorLoginPassword": "[parameters('postgresdb_admin_password')]",
                 "sslEnforcement": "Disabled",
+                "publicNetworkAccess": "Disabled",
                 "storageProfile": {
                     "storageMB": 5120,
                     "backupRetentionDays": 14,
@@ -381,27 +393,91 @@
             ]
         },
         {
-            "type": "Microsoft.DBforPostgreSQL/servers/virtualNetworkRules",
-            "apiVersion": "2017-12-01",
-            "name": "[concat(parameters('postgresql_db_server_name'), '/postgresql-vnet-rule')]",
+            "type": "Microsoft.Network/privateEndpoints",
+            "apiVersion": "2020-04-01",
+            "name": "[parameters('postgresqlPrivateLinkName')]",
+            "location": "[parameters('location')]",
             "dependsOn": [
-                "[resourceId('Microsoft.DBforPostgreSQL/servers', parameters('postgresql_db_server_name'))]"
+                "[resourceId('Microsoft.DBforPostgreSQL/servers', parameters('postgresql_db_server_name') )]"
             ],
             "properties": {
-                "virtualNetworkSubnetId": "[concat('/subscriptions/', subscription().subscriptionId, '/resourceGroups/', parameters('virtualNetwork_resourceGroup'), '/providers/Microsoft.Network/virtualNetworks/', parameters('virtualNetwork_name'), '/subnets/',parameters('virtualNetwork_aksSubnet'))]",
-                "ignoreMissingVnetServiceEndpoint": false
+                "privateLinkServiceConnections": [
+                    {
+                        "name": "[parameters('postgresqlPrivateLinkName')]",
+                        "properties": {
+                            "privateLinkServiceId": "[resourceId('Microsoft.DBforPostgreSQL/servers', parameters('postgresql_db_server_name'))]",
+                            "groupIds": [
+                                "postgresqlServer"
+                            ]
+                        }
+                    }
+                ],
+                "subnet": {
+                    "id": "[concat('/subscriptions/', subscription().subscriptionId, '/resourceGroups/', parameters('virtualNetwork_resourceGroup'), '/providers/Microsoft.Network/virtualNetworks/', parameters('virtualNetwork_name'), '/subnets/',parameters('virtualNetwork_dataSubnet'))]"
+                }
             }
         },
         {
-            "type": "Microsoft.DBforMySQL/servers/virtualNetworkRules",
-            "apiVersion": "2017-12-01",
-            "name": "[concat(parameters('mysql_db_server_name'), '/mysqldb-vnet-rule')]",
+            "type": "Microsoft.Network/privateEndpoints",
+            "apiVersion": "2020-04-01",
+            "name": "[parameters('mySqlPrivateLinkName')]",
+            "location": "[parameters('location')]",
             "dependsOn": [
-                "[resourceId('Microsoft.DBforMySQL/servers', parameters('mysql_db_server_name'))]"
+                "[resourceId('Microsoft.DBforMySQL/servers', parameters('mysql_db_server_name') )]"
             ],
             "properties": {
-                "virtualNetworkSubnetId": "[concat('/subscriptions/', subscription().subscriptionId, '/resourceGroups/', parameters('virtualNetwork_resourceGroup'), '/providers/Microsoft.Network/virtualNetworks/', parameters('virtualNetwork_name'), '/subnets/',parameters('virtualNetwork_aksSubnet'))]",
-                "ignoreMissingVnetServiceEndpoint": false
+                "privateLinkServiceConnections": [
+                    {
+                        "name": "[parameters('mySqlPrivateLinkName')]",
+                        "properties": {
+                            "privateLinkServiceId": "[resourceId('Microsoft.DBforMySQL/servers', parameters('mysql_db_server_name'))]",
+                            "groupIds": [
+                                "mySqlServer"
+                            ]
+                        }
+                    }
+                ],
+                "subnet": {
+                    "id": "[concat('/subscriptions/', subscription().subscriptionId, '/resourceGroups/', parameters('virtualNetwork_resourceGroup'), '/providers/Microsoft.Network/virtualNetworks/', parameters('virtualNetwork_name'), '/subnets/',parameters('virtualNetwork_dataSubnet'))]"
+                }
+            }
+        },
+        {
+            "type": "Microsoft.Network/privateEndpoints/privateDnsZoneGroups",
+            "apiVersion": "2020-03-01",
+            "name": "[concat(parameters('mySqlPrivateLinkName'), '/', parameters('mySqlPrivateLinkName'), '-group')]",
+            "location": "[parameters('location')]",            
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/privateEndpoints', parameters('mySqlPrivateLinkName'))]"
+            ],
+            "properties": {
+                "privateDnsZoneConfigs": [
+                    {
+                        "name": "[concat(parameters('mySqlPrivateLinkName'), '-cfg')]",
+                        "properties": {
+                            "privateDnsZoneId": "[resourceId(subscription().subscriptionId, parameters('virtualNetwork_resourceGroup'), 'Microsoft.Network/privateDnsZones', variables('mySQLPrivateDnsZoneName'))]"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "type": "Microsoft.Network/privateEndpoints/privateDnsZoneGroups",
+            "apiVersion": "2020-03-01",
+            "name": "[concat(parameters('postgresqlPrivateLinkName'), '/', parameters('postgresqlPrivateLinkName'), '-group')]",
+            "location": "[parameters('location')]",            
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/privateEndpoints', parameters('postgresqlPrivateLinkName'))]"
+            ],
+            "properties": {
+                "privateDnsZoneConfigs": [
+                    {
+                        "name": "[concat(parameters('postgresqlPrivateLinkName'), '-cfg')]",
+                        "properties": {
+                            "privateDnsZoneId": "[resourceId(subscription().subscriptionId, parameters('virtualNetwork_resourceGroup'), 'Microsoft.Network/privateDnsZones', variables('posgrePrivateDnsZoneName'))]"
+                        }
+                    }
+                ]
             }
         }
     ]

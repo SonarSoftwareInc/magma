@@ -38,7 +38,9 @@
         "nsg-aks-sr-elastic-1-name":"[concat(uniqueString(resourceGroup().id),'-nsg-akspool-sr-elastic-01')]",
         "nsg-aks-sr-elastic-2-name":"[concat(uniqueString(resourceGroup().id),'-nsg-akspool-sr-elastic-02')]",
         "nsg-aks-sr-kibana-1-name":"[concat(uniqueString(resourceGroup().id),'-nsg-akspool-sr-kibana-01')]",
-        "nsg-aks-sr-fluentd-1-name":"[concat(uniqueString(resourceGroup().id),'-nsg-akspool-sr-fluentd-01')]"
+        "nsg-aks-sr-fluentd-1-name":"[concat(uniqueString(resourceGroup().id),'-nsg-akspool-sr-fluentd-01')]",
+        "posgrePrivateDnsZoneName": "privatelink.postgres.database.azure.com",
+        "mySQLPrivateDnsZoneName": "privatelink.mysql.database.azure.com"
     },
     "resources": [
         {
@@ -302,7 +304,7 @@
                         "properties": {
                             "addressPrefix": "10.10.0.0/16",
                             "delegations": [],
-                            "privateEndpointNetworkPolicies": "Enabled",
+                            "privateEndpointNetworkPolicies": "Disabled",
                             "privateLinkServiceNetworkPolicies": "Enabled",
                             "networkSecurityGroup": {
                                 "id": "[resourceId('Microsoft.Network/networkSecurityGroups', parameters('nsg_akspool_name'))]"
@@ -320,7 +322,7 @@
                         "properties": {
                             "addressPrefix": "10.11.0.0/16",
                             "delegations": [],
-                            "privateEndpointNetworkPolicies": "Enabled",
+                            "privateEndpointNetworkPolicies": "Disabled",
                             "privateLinkServiceNetworkPolicies": "Enabled",
                             "networkSecurityGroup": {
                                 "id": "[resourceId('Microsoft.Network/networkSecurityGroups', parameters('nsg_datapool_name'))]"
@@ -339,46 +341,102 @@
                 "enableVmProtection": false
             }
         },
+        // {
+        //     "type": "Microsoft.Network/virtualNetworks/subnets",
+        //     "apiVersion": "2019-11-01",
+        //     "name": "[concat(parameters('virtualNetwork_name'), '/', parameters('virtualNetwork_aksSubnet'))]",
+        //     "dependsOn": [
+        //         "[resourceId('Microsoft.Network/virtualNetworks', parameters('virtualNetwork_name'))]",
+        //         "[resourceId('Microsoft.Network/networkSecurityGroups', parameters('nsg_akspool_name'))]"
+        //     ],
+        //     "properties": {
+        //         "addressPrefix": "10.10.0.0/16",
+        //         "delegations": [],
+        //         "privateEndpointNetworkPolicies": "Enabled",
+        //         "privateLinkServiceNetworkPolicies": "Enabled",
+        //         "networkSecurityGroup": {
+        //             "id":"[resourceId('Microsoft.Network/networkSecurityGroups', parameters('nsg_akspool_name'))]"
+        //         }
+        //     }
+        // },
+        // {
+        //     "type": "Microsoft.Network/virtualNetworks/subnets",
+        //     "apiVersion": "2019-11-01",
+        //     "name": "[concat(parameters('virtualNetwork_name'), '/', parameters('virtualNetwork_dataSubnet'))]",
+        //     "dependsOn": [
+        //         "[resourceId('Microsoft.Network/virtualNetworks', parameters('virtualNetwork_name'))]",
+        //         "[resourceId('Microsoft.Network/networkSecurityGroups', parameters('nsg_datapool_name'))]"
+        //     ],
+        //     "properties": {
+        //         "addressPrefix": "10.11.0.0/16",
+        //         "delegations": [],
+        //         "privateEndpointNetworkPolicies": "Enabled",
+        //         "privateLinkServiceNetworkPolicies": "Enabled",
+        //         "networkSecurityGroup": {
+        //             "id":"[resourceId('Microsoft.Network/networkSecurityGroups', parameters('nsg_datapool_name'))]"
+        //         },
+        //         "serviceEndpoints": [
+        //             {
+        //                 "service": "Microsoft.Sql",
+        //                 "locations": ["[parameters('location')]"]
+        //             }
+        //         ]            
+        //     }
+        // },
         {
-            "type": "Microsoft.Network/virtualNetworks/subnets",
-            "apiVersion": "2019-11-01",
-            "name": "[concat(parameters('virtualNetwork_name'), '/', parameters('virtualNetwork_aksSubnet'))]",
+            "type": "Microsoft.Network/privateDnsZones",
+            "apiVersion": "2018-09-01",
+            "name": "[variables('mySQLPrivateDnsZoneName')]",
             "dependsOn": [
                 "[resourceId('Microsoft.Network/virtualNetworks', parameters('virtualNetwork_name'))]",
-                "[resourceId('Microsoft.Network/networkSecurityGroups', parameters('nsg_akspool_name'))]"
+                "[resourceId('Microsoft.Network/networkSecurityGroups', parameters('nsg_akspool_name'))]",
+                "[resourceId('Microsoft.Network/networkSecurityGroups', parameters('nsg_datapool_name'))]"
+            ],
+            "location": "global"
+        },
+        {
+            "type": "Microsoft.Network/privateDnsZones/virtualNetworkLinks",
+            "apiVersion": "2018-09-01",
+            "name": "[concat(variables('mySQLPrivateDnsZoneName'), '/', variables('mySQLPrivateDnsZoneName'), '-link')]",
+            "location": "global",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/privateDnsZones', variables('mySQLPrivateDnsZoneName'))]",
+                "[resourceId('Microsoft.Network/virtualNetworks', parameters('virtualNetwork_name'))]"
             ],
             "properties": {
-                "addressPrefix": "10.10.0.0/16",
-                "delegations": [],
-                "privateEndpointNetworkPolicies": "Enabled",
-                "privateLinkServiceNetworkPolicies": "Enabled",
-                "networkSecurityGroup": {
-                    "id":"[resourceId('Microsoft.Network/networkSecurityGroups', parameters('nsg_akspool_name'))]"
+                "registrationEnabled": false,
+                "virtualNetwork": {
+                    "id": "[resourceId('Microsoft.Network/virtualNetworks', parameters('virtualNetwork_name'))]"
                 }
             }
         },
         {
-            "type": "Microsoft.Network/virtualNetworks/subnets",
-            "apiVersion": "2019-11-01",
-            "name": "[concat(parameters('virtualNetwork_name'), '/', parameters('virtualNetwork_dataSubnet'))]",
+            "type": "Microsoft.Network/privateDnsZones",
+            "apiVersion": "2018-09-01",
+            "name": "[variables('posgrePrivateDnsZoneName')]",
+            "location": "global",
             "dependsOn": [
                 "[resourceId('Microsoft.Network/virtualNetworks', parameters('virtualNetwork_name'))]",
-                "[resourceId('Microsoft.Network/networkSecurityGroups', parameters('nsg_datapool_name'))]"
+                "[resourceId('Microsoft.Network/privateDnsZones', variables('mySQLPrivateDnsZoneName'))]",
+                "[resourceId('Microsoft.Network/privateDnsZones/virtualNetworkLinks', variables('mySQLPrivateDnsZoneName'), concat(variables('mySQLPrivateDnsZoneName'), '-link'))]"                
+            ]
+        },
+        {
+            "type": "Microsoft.Network/privateDnsZones/virtualNetworkLinks",
+            "apiVersion": "2018-09-01",
+            "name": "[concat(variables('posgrePrivateDnsZoneName'), '/', variables('posgrePrivateDnsZoneName'), '-link')]",
+            "location": "global",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/privateDnsZones', variables('posgrePrivateDnsZoneName'))]",               
+                "[resourceId('Microsoft.Network/virtualNetworks', parameters('virtualNetwork_name'))]",
+                "[resourceId('Microsoft.Network/privateDnsZones', variables('mySQLPrivateDnsZoneName'))]",
+                "[resourceId('Microsoft.Network/privateDnsZones/virtualNetworkLinks', variables('mySQLPrivateDnsZoneName'), concat(variables('mySQLPrivateDnsZoneName'), '-link'))]"                
             ],
             "properties": {
-                "addressPrefix": "10.11.0.0/16",
-                "delegations": [],
-                "privateEndpointNetworkPolicies": "Enabled",
-                "privateLinkServiceNetworkPolicies": "Enabled",
-                "networkSecurityGroup": {
-                    "id":"[resourceId('Microsoft.Network/networkSecurityGroups', parameters('nsg_datapool_name'))]"
-                },
-                "serviceEndpoints": [
-                    {
-                        "service": "Microsoft.Sql",
-                        "locations": ["[parameters('location')]"]
-                    }
-                ]            
+                "registrationEnabled": false,
+                "virtualNetwork": {
+                    "id": "[resourceId('Microsoft.Network/virtualNetworks', parameters('virtualNetwork_name'))]"
+                }
             }
         }
     ]

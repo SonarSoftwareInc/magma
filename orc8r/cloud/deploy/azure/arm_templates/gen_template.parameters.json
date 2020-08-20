@@ -9,7 +9,12 @@
       "value": "magma_dev"
     },
     "postgresdb_admin_password": {
-      "value": "Sonar_SFT_654321!!"
+      "reference": {
+        "keyVault": {
+        "id": "/subscriptions/53d25eb2-0006-42be-bc4b-27a5906cf9ce/resourceGroups/sonar-prod-magma/providers/Microsoft.KeyVault/vaults/sonar-prod-magma-kv-1"
+        },
+        "secretName": "ControllerDBPass"
+      }
     },
     "postgresql_db_server_name": {
         "value":"orc8r-postgresqldb-03"
@@ -18,7 +23,12 @@
       "value": "magma_dev"
     },
     "mysqldb_admin_password": {
-      "value": "Sonar_SFT_654321!!"
+      "reference": {
+        "keyVault": {
+        "id": "/subscriptions/53d25eb2-0006-42be-bc4b-27a5906cf9ce/resourceGroups/sonar-prod-magma/providers/Microsoft.KeyVault/vaults/sonar-prod-magma-kv-1"
+        },
+        "secretName": "MagmaLTEDBPass"
+      }
     },
     "mysql_db_server_name": {
         "value": "orc8r-mysqldbserver-01"
