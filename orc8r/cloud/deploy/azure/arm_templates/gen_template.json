@@ -202,6 +202,10 @@
         "aks_nodeResourceGroup": {
             "type": "string",
             "defaultValue": ""
+        },
+        "aks_subnet_ip_range": {
+            "type": "string",
+            "defaultValue": "10.10.0.0/16"
         }
     },
     "variables": {
@@ -304,10 +308,11 @@
                     "loadBalancerSku": "standard"
                 },
                 "apiServerAccessProfile": {
-                    "authorizedIPRanges": [],
+                    "authorizedIPRanges": [
+                        "[parameters('aks_subnet_ip_range')]"
+                    ],
                     "enablePrivateCluster": "[parameters('aks_enablePrivateCluster')]"
                 },
-                //"nodeResourceGroup": "sonar-prod-magma-mc"
                 "nodeResourceGroup": "[parameters('aks_nodeResourceGroup')]"
             }
         },

@@ -6,7 +6,12 @@
       "value": "eastus"
     },
     "postgresdb_admin_login": {
-      "value": "magma_dev"
+      "reference": {
+        "keyVault": {
+        "id": "/subscriptions/53d25eb2-0006-42be-bc4b-27a5906cf9ce/resourceGroups/sonar-prod-magma/providers/Microsoft.KeyVault/vaults/sonar-prod-magma-01"
+        },
+        "secretName": "ControllerDBUser"
+      }
     },
     "postgresdb_admin_password": {
       "reference": {
@@ -20,7 +25,12 @@
         "value":"orc8r-postgresqldb-03"
     },
     "mysqldb_admin_login": {
-      "value": "magma_dev"
+      "reference": {
+        "keyVault": {
+        "id": "/subscriptions/53d25eb2-0006-42be-bc4b-27a5906cf9ce/resourceGroups/sonar-prod-magma/providers/Microsoft.KeyVault/vaults/sonar-prod-magma-01"
+        },
+        "secretName": "MagmaLTEDBUser"
+      }
     },
     "mysqldb_admin_password": {
       "reference": {
