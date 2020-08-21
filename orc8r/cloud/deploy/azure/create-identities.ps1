@@ -15,6 +15,16 @@ param(
 $account = az account show | ConvertFrom-Json
 $subscription = $account.Id
 
+$group = (az group list --query "[?name == $rgName]") | ConvertFrom-Json
+if (-not $group -or $group.length -eq 0) 
+{
+    Write-Host "Creating Resource Group"
+    az group create --location $location --name $rgName 
+}
+else {
+    Write-Host "Resource Group alread exists."
+}
+
 $keyVault = (az keyvault list --query "[?name == '$keyVaultName']") | ConvertFrom-Json
 if (-not $keyVault -or  $keyVault.legnth -eq 0)
 {
