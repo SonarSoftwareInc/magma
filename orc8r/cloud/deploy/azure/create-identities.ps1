@@ -15,7 +15,7 @@ param(
 $account = az account show | ConvertFrom-Json
 $subscription = $account.Id
 
-$group = (az group list --query "[?name == $rgName]") | ConvertFrom-Json
+$group = (az group list --query "[?name == '$rgName']") | ConvertFrom-Json
 if (-not $group -or $group.length -eq 0) 
 {
     Write-Host "Creating Resource Group"
