@@ -30,11 +30,29 @@ Here is an example usage of the script with the required parameters:
 
 ---
 
-## 2. Packaging and Storing Certificates In Key Vault
+## 2. Storing Secrets and Certificates In Key Vault
+
+### Creating the Secrets
 
 From a bash shell, set the current directory to a local location of the certificates by replacing the SECRET_VALUE below with the password for the certificate and running the command.
 
 `az keyvault secret set --name SSLKeyPassword --value SECRET_VALUE --vault-name myorg-prod-magma-01`
+
+Run the command below replacing DB_USER with the username to be used with the controller database:
+
+`az keyvault secret set --name ControllerDBUser --value DB_USER --vault-name myorg-prod-magma-01`
+
+Run the command below replacing DB_PASS with the password to be used with the controller database:
+
+`az keyvault secret set --name ControllerDBPass --value DB_PASS --vault-name myorg-prod-magma-01`
+
+Run the command below replacing DB_USER with the username to be used with the MagmaLTE database:
+
+`az keyvault secret set --name MagmaLTEDBUser --value DB_USER --vault-name myorg-prod-magma-01`
+
+Run the command below replacing DB_PASS with the password to be used with the MagmaLTE database:
+
+`az keyvault secret set --name MagmaLTEDBPass --value DB_PASS --vault-name myorg-prod-magma-01`
 
 ### Packaging the Files
 
@@ -48,7 +66,7 @@ After creating the application certificates using the *`create_application_certs
 
 Now that the certificate files are packaged, we can import them into the Key Vault by running these commands:
 
-`az keyvault certificate import --file .\myorg.pfx --name myorg-com --vault-name myorg-prod-magma-01`
+`az keyvault certificate import --file .\domain.pfx --name domain --vault-name myorg-prod-magma-01`
 
 `az keyvault certificate import --file .\certifier.pfx --name Certifier --vault-name myorg-prod-magma-01`
 
@@ -108,7 +126,9 @@ Then run the following command to create the AKS namespace:
 
 ## 6.  Populate Helm Chart Values
 
-A values YAML file for the Helm deployment needs to be created for your specific environment. Create a YAML file under the folder: `orc8r/cloud/helm/orc8r/`.
+A values YAML file for the Helm deployment needs to be created for your specific environment. Create a YAML file in a separate private repository for the appropriate deployment stage, naming it as such (replacing `[stage]` with the actual name of the stage i.e. "prod" or "dev"):
+
+`vals-[stage].yml`
 
 Add the following template to the file replacing the brackets with the appropriate values:
 
@@ -158,8 +178,8 @@ controller:
       db: orc8r
       host: orc8r-postgresqldb-03.postgres.database.azure.com
       port: 5432
-      user: magma_dev@orc8r-postgresqldb-03
-      pass: [password]
+      user:
+      pass:
 
 metrics:
   imagePullSecrets: []
@@ -248,9 +268,9 @@ nms:
     env:
       api_host: orc8r-proxy.magma-stage.svc.cluster.local:9443
       mysql_host: orc8r-mysqldbserver-01.mysql.database.azure.com
-      mysql_user: magma_dev@orc8r-mysqldbserver-01
+      mysql_user:
       grafana_address: orc8r-user-grafana.magma-stage.svc.cluster.local:3000
-      mysql_pass: [password]
+      mysql_pass:
 
   nginx:
     manifests:
@@ -290,6 +310,31 @@ Once a subscription is selected, the Cluster dropdown will populate with availab
 
 Give the service connection a name, check the box to grant permission to all pipelines, and then click **Save**.
 
+### Updating the YAML
+
+Open the pipeline YAML file for editing which is located here:
+
+*`orc8r/cloud/deploy/azure/aks-pipeline.yml`*
+
+In the section below, update the values in the brackets to point to the private repository you created in the [Populate Helm Chart Values](#6-populate-helm-chart-values) section:
+
+```yaml
+resources:
+  repositories:
+  - repository: magma_config
+    type: github
+    endpoint: [GitHub service connection]
+    name: [MyOrg/magma_config]
+```
+
+---
+
+*Note: The `repository` value is the name used to reference the repository internally within the pipeline. To avoid updating the aks-pipeline.yml file, do not change this value.`
+
+The `GitHub service connection` can be the same one that was already created to allow Azure DevOps to access the magma code base.*
+
+---
+
 ### Creating the Pipeline
 
 In Azure DevOps portal, click **Pipelines** in the left side of the page and then click the **New pipeline** button.
@@ -311,6 +356,12 @@ Click the **Save & queue** dropdown arrow and select **Save**.
 At this point, we should be ready to run the pipeline. Open the pipeline in Azure DevOps and click the **Run pipeline** button.
 
 From the parameters blade, we can define some values to be used during execution of the pipeline. Ensure that everything is correct and that the appropriate stages are selected in the ***Stages to run*** area.
+
+---
+
+*Note: Checking the `Enable system diagnostics` may cause some tasks in the pipeline to appear to fail.*
+
+---
 
 ---
 

@@ -27,7 +27,7 @@ parameters:
   - name: helmValsFilepath
     displayName: Helm Values Filepath
     type: string
-    default: orc8r/cloud/helm/orc8r/vals-stage.yml
+    default: orc8r/cloud/helm/orc8r/vals.yml
   - name: acrServiceConnection
     displayName: Azure Container Registry Service Connection
     type: string
@@ -36,6 +36,17 @@ parameters:
     displayName: Azure Kubernetes Service Connection
     type: string
     default: sonar-prod-magma-aks
+  - name: keyVaultName
+    displayName: Key Vault Name
+    type: string
+    default: sonar-prod-magma-01
+
+resources:
+  repositories:
+  - repository: magma_config
+    type: github
+    endpoint: SonarSoftwareInc
+    name: SonarSoftwareInc/magma_config
 
 trigger:
 - master
@@ -50,9 +61,9 @@ variables:
   - name: NMS_COMPOSE_PROJECT
     value: magmalte    
   - name: STAGE_BRANCH_PREFIX
-    value: azure-deployment
+    value: azure-deployment-pipeline-refactor
   - name: PROD_BRANCH
-    value: azure-pipelines
+    value: azure-deployment-pipeline-refactor
 
 stages:
 - stage: Build_And_Publish
@@ -198,107 +209,16 @@ stages:
         runOnce:
           deploy:
             steps:
-            - checkout: self
-            - script: echo "Insert AKS Stage deploy..."
-            - task: HelmInstaller@1
-              inputs:
-                helmVersionToInstall: '3.2.4'
-            - task: KubectlInstaller@0
-              inputs:
-                kubectlVersion: 'latest'
-            - task: Kubernetes@1
-              inputs:
-                connectionType: 'Kubernetes Service Connection'
-                kubernetesServiceEndpoint: '${{ parameters.aksServiceConnection }}'
-                namespace: '${{ parameters.aksNamespace }}'
-                command: 'apply'
-                arguments: '-f orc8r/cloud/deploy/azure/azurefile-sc.yaml'
-                secretType: 'dockerRegistry'
-                containerRegistryType: 'Azure Container Registry'
-            - task: Kubernetes@1
-              inputs:
-                connectionType: 'Kubernetes Service Connection'
-                kubernetesServiceEndpoint: '${{ parameters.aksServiceConnection }}'
-                namespace: '${{ parameters.aksNamespace }}'
-                command: 'apply'
-                arguments: '-f orc8r/cloud/deploy/azure/azuredisk-sc.yaml'
-                secretType: 'dockerRegistry'
-                containerRegistryType: 'Azure Container Registry'
-            - task: KubernetesManifest@0
-              inputs:
-                action: 'deploy'
-                kubernetesServiceConnection: '${{ parameters.aksServiceConnection }}'
-                namespace: '${{ parameters.aksNamespace }}'
-                manifests: 'orc8r/cloud/deploy/azure/prometheus-cfg-pvc.yaml'
-            - task: KubernetesManifest@0
-              inputs:
-                action: 'deploy'
-                kubernetesServiceConnection: '${{ parameters.aksServiceConnection }}'
-                namespace: '${{ parameters.aksNamespace }}'
-                manifests: 'orc8r/cloud/deploy/azure/prometheus-data-pvc.yaml'
-            - task: KubernetesManifest@0
-              inputs:
-                action: 'deploy'
-                kubernetesServiceConnection: '${{ parameters.aksServiceConnection }}'
-                namespace: '${{ parameters.aksNamespace }}'
-                manifests: 'orc8r/cloud/deploy/azure/grafana-dashboards-pvc.yaml'
-            - task: KubernetesManifest@0
-              inputs:
-                action: 'deploy'
-                kubernetesServiceConnection: '${{ parameters.aksServiceConnection }}'
-                namespace: '${{ parameters.aksNamespace }}'
-                manifests: 'orc8r/cloud/deploy/azure/grafana-data-pvc.yaml'
-            - task: KubernetesManifest@0
-              inputs:
-                action: 'deploy'
-                kubernetesServiceConnection: '${{ parameters.aksServiceConnection }}'
-                namespace: '${{ parameters.aksNamespace }}'
-                manifests: 'orc8r/cloud/deploy/azure/grafana-datasources-pvc.yaml'
-            - task: KubernetesManifest@0
-              inputs:
-                action: 'deploy'
-                kubernetesServiceConnection: '${{ parameters.aksServiceConnection }}'
-                namespace: '${{ parameters.aksNamespace }}'
-                manifests: 'orc8r/cloud/deploy/azure/grafana-providers-pvc.yaml'
-            - task: KubernetesManifest@0
-              inputs:
-                action: 'deploy'
-                kubernetesServiceConnection: '${{ parameters.aksServiceConnection }}'
-                namespace: '${{ parameters.aksNamespace }}'
-                manifests: 'orc8r/cloud/deploy/azure/openvpn-pvc.yaml'
-            - task: AzureKeyVault@1
-              inputs:
-                azureSubscription: 'sonar-prod-magma'
-                KeyVaultName: 'sonar-prod-magma-01'
-                SecretsFilter: '*'
-                RunAsPreJob: true
-            - task: AzureCLI@2
-              inputs:
-                azureSubscription: 'sonar-prod-magma'
-                scriptType: 'bash'
-                scriptLocation: 'scriptPath'
-                scriptPath: 'orc8r/cloud/deploy/azure/scripts/fetch_certs.sh'
-                arguments: '$(SSLKeyPassword) sonar-prod-magma-01'
-                failOnStandardError: false
-            - task: CmdLine@2
-              inputs:
-                script: |
-                  cd orc8r/cloud/helm/orc8r/charts/secrets/secrets/certs
-                  # sudo apt-get install dos2unix
-                  # sudo dos2unix ../../../../../deploy/scripts/create_application_certs.sh
-                  # bash ../../../../../deploy/scripts/create_application_certs.sh sonarlte.com
-                  ls -lh
-                failOnStderr: true
-            - task: HelmDeploy@0
-              inputs:
-                connectionType: 'Kubernetes Service Connection'
-                kubernetesServiceConnection: '${{ parameters.aksServiceConnection }}'
-                namespace: '${{ parameters.aksNamespace }}'
-                command: 'upgrade'
-                chartType: 'FilePath'
-                chartPath: 'orc8r/cloud/helm/orc8r'
-                releaseName: 'orc8r'
-                valueFile: '${{ parameters.helmValsFilepath }}'
+              - checkout: magma_config
+                path: overrides
+              - template: aks-pipeline.yml
+                parameters:
+                  aksServiceConnection: ${{ parameters.aksServiceConnection }}
+                  aksNamespace: ${{ parameters.aksNamespace }}
+                  helmValsFilepath: ${{ parameters.helmValsFilepath }}
+                  deploymentStage: stage
+                  azureServiceConnection: ${{ parameters.acrServiceConnection }}
+                  keyVaultName: ${{ parameters.keyVaultName }}            
 
 - stage: Prod_Deploy
   jobs:
@@ -311,4 +231,13 @@ stages:
         runOnce:
           deploy:
             steps:
-            - script: echo "Insert AKS Prod deploy..."
+              - checkout: magma_config
+                path: overrides
+              - template: aks-pipeline.yml
+                parameters:
+                  aksServiceConnection: ${{ parameters.aksServiceConnection }}
+                  aksNamespace: ${{ parameters.aksNamespace }}
+                  helmValsFilepath: ${{ parameters.helmValsFilepath }}
+                  deploymentStage: prod
+                  azureServiceConnection: ${{ parameters.acrServiceConnection }}
+                  keyVaultName: ${{ parameters.keyVaultName }}
