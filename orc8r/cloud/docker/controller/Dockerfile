@@ -102,6 +102,8 @@ COPY --from=builder /${CNTLR_FILES}/apidocs /var/opt/magma/static/apidocs
 # Copy the scripts from the context
 COPY ${CNTLR_FILES}/create_test_controller_certs /usr/local/bin/create_test_controller_certs
 
+RUN chmod +x /usr/local/bin/create_test_controller_certs
+
 # Copy the supervisor configs
 COPY ${CNTLR_FILES}/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 COPY ${CNTLR_FILES}/supervisor_logger.py /usr/local/lib/python2.7/dist-packages/supervisor_logger.py

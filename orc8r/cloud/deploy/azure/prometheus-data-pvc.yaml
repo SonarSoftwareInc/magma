@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: prometheus-data-azurefile
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: azurefile-sc
+  resources:
+    requests:
+      storage: 64Gi

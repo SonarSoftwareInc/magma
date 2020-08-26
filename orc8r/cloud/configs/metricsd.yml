@@ -9,10 +9,10 @@
 profile: "prometheus"
 
 prometheusPushAddresses:
-  - "http://prometheus-cache:9091/metrics"
+  - "http://orc8r-prometheus-cache.magma-stage.svc.cluster.local:9091/metrics"
 
-prometheusQueryAddress: "http://prometheus:9090"
+prometheusQueryAddress: "http://orc8r-prometheus.magma-stage.svc.cluster.local:9090"
 
-alertmanagerApiURL: "http://alertmanager:9093/api/v2"
-prometheusConfigServiceURL: "http://prometheus-configurer:9100"
-alertmanagerConfigServiceURL: "http://alertmanager-configurer:9101"
+alertmanagerApiURL: "http://orc8r-alertmanager.magma-stage.svc.cluster.local:9093/api/v2"
+prometheusConfigServiceURL: "http://orc8r-prometheus-configurer.magma-stage.svc.cluster.local:9100"
+alertmanagerConfigServiceURL: "http://orc8r-alertmanager-configurer.magma-stage.svc.cluster.local:9101"

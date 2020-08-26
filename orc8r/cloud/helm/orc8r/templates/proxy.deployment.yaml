@@ -82,15 +82,15 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: status.podIP
-          livenessProbe:
-            tcpSocket:
-              port: clientcert
-            initialDelaySeconds: 10
-            periodSeconds: 30
-          readinessProbe:
-            tcpSocket:
-              port: clientcert
-            initialDelaySeconds: 5
-            periodSeconds: 10
+          # livenessProbe:
+          #   tcpSocket:
+          #     port: clientcert
+          #   initialDelaySeconds: 10
+          #   periodSeconds: 30
+          # readinessProbe:
+          #   tcpSocket:
+          #     port: clientcert
+          #   initialDelaySeconds: 5
+          #   periodSeconds: 10
           resources:
 {{ toYaml .Values.proxy.resources | indent 12 }}

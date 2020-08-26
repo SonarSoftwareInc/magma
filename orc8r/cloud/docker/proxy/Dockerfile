@@ -60,6 +60,9 @@ COPY ${PROXY_FILES}/run_nghttpx.py /usr/local/bin/run_nghttpx.py
 COPY ${PROXY_FILES}/squid.conf /etc/squid/squid.conf
 COPY ${PROXY_FILES}/create_test_proxy_certs /usr/local/bin/create_test_proxy_certs
 
+RUN chmod +x /usr/local/bin/run_nghttpx.py
+RUN chmod +x /usr/local/bin/create_test_proxy_certs
+
 # Copy the supervisor configs
 COPY ${PROXY_FILES}/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 COPY ${CNTLR_FILES}/supervisor_logger.py /usr/local/lib/python2.7/dist-packages/supervisor_logger.py

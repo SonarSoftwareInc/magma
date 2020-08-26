@@ -28,6 +28,18 @@ router.get(
   '/organization/async',
   asyncHandler(async (req: FBCNMSRequest, res) => {
     const organizations = await Organization.findAll();
+
+    for (let org of organizations) {      
+      if (!Array.isArray(org.tabs)) {        
+        try {          
+          org.tabs = JSON.parse(org.tabs);        
+        }        
+        catch {          
+          org.tabs = []        
+        }      
+      }    
+    }
+
     res.status(200).send({organizations});
   }),
 );
@@ -191,6 +203,16 @@ router.get(
   '/networks/async',
   asyncHandler(async (_: FBCNMSRequest, res) => {
     const networks = await MagmaV1API.getNetworks();
+
+    if (!Array.isArray(networks)) {        
+      try {          
+        networks = JSON.parse(networks);        
+      }        
+      catch {          
+        networks = []        
+      }      
+    }    
+
     res.status(200).send(networks);
   }),
 );

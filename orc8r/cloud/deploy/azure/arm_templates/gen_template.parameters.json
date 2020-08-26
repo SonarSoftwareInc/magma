@@ -1,0 +1,125 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "location": {
+      "value": "eastus"
+    },
+    "postgresdb_admin_login": {
+      "reference": {
+        "keyVault": {
+        "id": "/subscriptions/53d25eb2-0006-42be-bc4b-27a5906cf9ce/resourceGroups/sonar-prod-magma/providers/Microsoft.KeyVault/vaults/sonar-prod-magma-01"
+        },
+        "secretName": "ControllerDBUser"
+      }
+    },
+    "postgresdb_admin_password": {
+      "reference": {
+        "keyVault": {
+        "id": "/subscriptions/53d25eb2-0006-42be-bc4b-27a5906cf9ce/resourceGroups/sonar-prod-magma/providers/Microsoft.KeyVault/vaults/sonar-prod-magma-01"
+        },
+        "secretName": "ControllerDBPass"
+      }
+    },
+    "postgresql_db_server_name": {
+        "value":"orc8r-postgresqldb-03"
+    },
+    "mysqldb_admin_login": {
+      "reference": {
+        "keyVault": {
+        "id": "/subscriptions/53d25eb2-0006-42be-bc4b-27a5906cf9ce/resourceGroups/sonar-prod-magma/providers/Microsoft.KeyVault/vaults/sonar-prod-magma-01"
+        },
+        "secretName": "MagmaLTEDBUser"
+      }
+    },
+    "mysqldb_admin_password": {
+      "reference": {
+        "keyVault": {
+        "id": "/subscriptions/53d25eb2-0006-42be-bc4b-27a5906cf9ce/resourceGroups/sonar-prod-magma/providers/Microsoft.KeyVault/vaults/sonar-prod-magma-01"
+        },
+        "secretName": "MagmaLTEDBPass"
+      }
+    },
+    "mysql_db_server_name": {
+        "value": "orc8r-mysqldbserver-01"
+    },
+    "virtualNetwork_resourceGroup": {
+      "value": "sonar-prod-magma"
+    },
+    "virtualNetwork_name": {
+      "value": "orc8r-vnet-01"
+    },
+    "virtualNetwork_aksSubnet": {
+      "value": "orc8r-subnet-aks-01"
+    },
+    "virtualNetwork_dataSubnet": {
+      "value": "orc8r-subnet-data-01"
+    },
+    "aks_clusterName": {
+      "value": "magma-aks"
+    },
+    "aks_subnetRoleAssignmentName": {
+      "value": "ae9fc887-a9da-45f7-b8da-6e9f4075dd9e"
+    },
+    "aks_servicePrincipalObjectId": {
+      "reference": {
+        "keyVault": {
+        "id": "/subscriptions/53d25eb2-0006-42be-bc4b-27a5906cf9ce/resourceGroups/sonar-prod-magma/providers/Microsoft.KeyVault/vaults/sonar-prod-magma-01"
+        },
+        "secretName": "ServicePrincipalObjectId"
+      }
+    },
+    "aks_servicePrincipalClientId": {
+      "reference": {
+        "keyVault": {
+        "id": "/subscriptions/53d25eb2-0006-42be-bc4b-27a5906cf9ce/resourceGroups/sonar-prod-magma/providers/Microsoft.KeyVault/vaults/sonar-prod-magma-01"
+        },
+        "secretName": "ServicePrincipalClientId"
+      }
+    },
+    "aks_servicePrincipalClientSecret": {
+      "reference": {
+        "keyVault": {
+        "id": "/subscriptions/53d25eb2-0006-42be-bc4b-27a5906cf9ce/resourceGroups/sonar-prod-magma/providers/Microsoft.KeyVault/vaults/sonar-prod-magma-01"
+        },
+        "secretName": "ServicePrincipalSecret"
+      }
+    },
+    "aks_AAD_ClientAppID": {
+      "reference": {
+        "keyVault": {
+        "id": "/subscriptions/53d25eb2-0006-42be-bc4b-27a5906cf9ce/resourceGroups/sonar-prod-magma/providers/Microsoft.KeyVault/vaults/sonar-prod-magma-01"
+        },
+        "secretName": "ClientAppId"
+      }
+    },
+    "aks_AAD_ServerAppID": {
+      "reference": {
+        "keyVault": {
+        "id": "/subscriptions/53d25eb2-0006-42be-bc4b-27a5906cf9ce/resourceGroups/sonar-prod-magma/providers/Microsoft.KeyVault/vaults/sonar-prod-magma-01"
+        },
+        "secretName": "ServerAppId"
+      }
+    },
+    "aks_AAD_TenantID": {
+      "value": "1c68ef4b-f2e1-4bbf-b44a-4aae3cc3d70f"
+    },
+    "aks_AAD_ServerAppSecret": {
+      "reference": {
+        "keyVault": {
+        "id": "/subscriptions/53d25eb2-0006-42be-bc4b-27a5906cf9ce/resourceGroups/sonar-prod-magma/providers/Microsoft.KeyVault/vaults/sonar-prod-magma-01"
+        },
+        "secretName": "ServerAppSecret"
+      }
+    },
+    "aks_serviceCidr": {
+      "value": "20.0.0.0/16"
+    },
+    "aks_dnsServiceIP": {
+      "value": "20.0.0.10"
+    },
+    "aks_nodeResourceGroup": {
+      "value": "sonar-prod-magma-nodes"
+    }
+  }
+}

@@ -1,0 +1,161 @@
+parameters:
+  - name: aksServiceConnection
+    type: string
+  - name: aksNamespace
+    type: string
+  - name: helmValsFilepath
+    type: string
+  - name: deploymentStage
+    type: string
+  - name: azureServiceConnection
+    type: string
+  - name: keyVaultName
+    type: string
+
+steps:
+- checkout: self
+  path: s
+- task: AzureKeyVault@1
+  displayName: Connect to Key Vault
+  inputs:
+    azureSubscription: ${{ parameters.azureServiceConnection }}
+    KeyVaultName: ${{ parameters.keyVaultName }}
+    SecretsFilter: '*'
+    RunAsPreJob: true
+- task: UsePythonVersion@0
+  displayName: Use Python v3.x
+  inputs:
+    versionSpec: '3.x'
+    addToPath: true
+    architecture: 'x64'
+  name: pyTools
+- task: Bash@3
+  displayName: Install Python Dependencies
+  inputs:
+    targetType: 'inline'
+    script: $(pyTools.pythonLocation)/bin/pip install pyyaml
+- task: PythonScript@0
+  displayName: Configure Helm values file with controller db user
+  inputs:
+    scriptSource: 'filePath'
+    scriptPath: 'orc8r/cloud/deploy/azure/scripts/update-helm-deploy-value.py'
+    arguments: '-i $(Agent.BuildDirectory)/overrides/vals-${{ parameters.deploymentStage }}.yml -o $(Agent.BuildDirectory)/s/orc8r/cloud/helm/orc8r/vals.yml -p "controller.spec.database.user" -v $(ControllerDBUser)'
+    workingDirectory: 'orc8r/cloud/deploy/azure/scripts'
+- task: PythonScript@0
+  displayName: Configure Helm values file with controller db password
+  inputs:
+    scriptSource: 'filePath'
+    scriptPath: 'orc8r/cloud/deploy/azure/scripts/update-helm-deploy-value.py'
+    arguments: '-i $(Agent.BuildDirectory)/s/orc8r/cloud/helm/orc8r/vals.yml -o $(Agent.BuildDirectory)/s/orc8r/cloud/helm/orc8r/vals.yml -p "controller.spec.database.pass" -v $(ControllerDBPass)'
+    workingDirectory: 'orc8r/cloud/deploy/azure/scripts'
+- task: PythonScript@0
+  displayName: Configure Helm values file with MagmaLTE db user
+  inputs:
+    scriptSource: 'filePath'
+    scriptPath: 'orc8r/cloud/deploy/azure/scripts/update-helm-deploy-value.py'
+    arguments: '-i $(Agent.BuildDirectory)/s/orc8r/cloud/helm/orc8r/vals.yml -o $(Agent.BuildDirectory)/s/orc8r/cloud/helm/orc8r/vals.yml -p "nms.magmalte.env.mysql_user" -v $(MagmaLTEDBUser)'
+    workingDirectory: 'orc8r/cloud/deploy/azure/scripts'
+- task: PythonScript@0
+  displayName: Configure Helm values file with MagmaLTE db password
+  inputs:
+    scriptSource: 'filePath'
+    scriptPath: 'orc8r/cloud/deploy/azure/scripts/update-helm-deploy-value.py'
+    arguments: '-i $(Agent.BuildDirectory)/s/orc8r/cloud/helm/orc8r/vals.yml -o $(Agent.BuildDirectory)/s/orc8r/cloud/helm/orc8r/vals.yml -p "nms.magmalte.env.mysql_pass" -v $(MagmaLTEDBPass)'
+    workingDirectory: 'orc8r/cloud/deploy/azure/scripts'
+- task: HelmInstaller@1
+  displayName: Install Helm
+  inputs:
+    helmVersionToInstall: '3.2.4'
+- task: KubectlInstaller@0
+  displayName: Install Kubectl
+  inputs:
+    kubectlVersion: 'latest'
+- task: Kubernetes@1
+  displayName: Create Azure File Storage Class
+  inputs:
+    connectionType: 'Kubernetes Service Connection'
+    kubernetesServiceEndpoint: '${{ parameters.aksServiceConnection }}'
+    namespace: '${{ parameters.aksNamespace }}'
+    command: 'apply'
+    arguments: '-f orc8r/cloud/deploy/azure/azurefile-sc.yaml'
+    secretType: 'dockerRegistry'
+    containerRegistryType: 'Azure Container Registry'
+- task: Kubernetes@1
+  displayName: Create Azure Disk Storage Class
+  inputs:
+    connectionType: 'Kubernetes Service Connection'
+    kubernetesServiceEndpoint: '${{ parameters.aksServiceConnection }}'
+    namespace: '${{ parameters.aksNamespace }}'
+    command: 'apply'
+    arguments: '-f orc8r/cloud/deploy/azure/azuredisk-sc.yaml'
+    secretType: 'dockerRegistry'
+    containerRegistryType: 'Azure Container Registry'
+- task: KubernetesManifest@0
+  displayName: Create Prometheus Config Persistent Volume Claim
+  inputs:
+    action: 'deploy'
+    kubernetesServiceConnection: '${{ parameters.aksServiceConnection }}'
+    namespace: '${{ parameters.aksNamespace }}'
+    manifests: 'orc8r/cloud/deploy/azure/prometheus-cfg-pvc.yaml'
+- task: KubernetesManifest@0
+  displayName: Create Prometheus Data Persistent Volume Claim
+  inputs:
+    action: 'deploy'
+    kubernetesServiceConnection: '${{ parameters.aksServiceConnection }}'
+    namespace: '${{ parameters.aksNamespace }}'
+    manifests: 'orc8r/cloud/deploy/azure/prometheus-data-pvc.yaml'
+- task: KubernetesManifest@0
+  displayName: Create Grafana Dashboards Persistent Volume Claim
+  inputs:
+    action: 'deploy'
+    kubernetesServiceConnection: '${{ parameters.aksServiceConnection }}'
+    namespace: '${{ parameters.aksNamespace }}'
+    manifests: 'orc8r/cloud/deploy/azure/grafana-dashboards-pvc.yaml'
+- task: KubernetesManifest@0
+  displayName: Create Grafana Data Persistent Volume Claim
+  inputs:
+    action: 'deploy'
+    kubernetesServiceConnection: '${{ parameters.aksServiceConnection }}'
+    namespace: '${{ parameters.aksNamespace }}'
+    manifests: 'orc8r/cloud/deploy/azure/grafana-data-pvc.yaml'
+- task: KubernetesManifest@0
+  displayName: Create Grafana Datasources Persistent Volume Claim
+  inputs:
+    action: 'deploy'
+    kubernetesServiceConnection: '${{ parameters.aksServiceConnection }}'
+    namespace: '${{ parameters.aksNamespace }}'
+    manifests: 'orc8r/cloud/deploy/azure/grafana-datasources-pvc.yaml'
+- task: KubernetesManifest@0
+  displayName: Create Grafana Providers Persistent Volume Claim
+  inputs:
+    action: 'deploy'
+    kubernetesServiceConnection: '${{ parameters.aksServiceConnection }}'
+    namespace: '${{ parameters.aksNamespace }}'
+    manifests: 'orc8r/cloud/deploy/azure/grafana-providers-pvc.yaml'
+- task: KubernetesManifest@0
+  displayName: Create OpenVPN Persistent Volume Claim
+  inputs:
+    action: 'deploy'
+    kubernetesServiceConnection: '${{ parameters.aksServiceConnection }}'
+    namespace: '${{ parameters.aksNamespace }}'
+    manifests: 'orc8r/cloud/deploy/azure/openvpn-pvc.yaml'
+- task: AzureCLI@2
+  displayName: Retrieve Certificates
+  inputs:
+    azureSubscription: ${{ parameters.azureServiceConnection }}
+    scriptType: 'bash'
+    scriptLocation: 'scriptPath'
+    scriptPath: 'orc8r/cloud/deploy/azure/scripts/fetch_certs.sh'
+    arguments: '$(SSLKeyPassword) ${{ parameters.keyVaultName }}'
+    failOnStandardError: false
+- task: HelmDeploy@0
+  displayName: Deploy Helm Charts
+  inputs:
+    connectionType: 'Kubernetes Service Connection'
+    kubernetesServiceConnection: '${{ parameters.aksServiceConnection }}'
+    namespace: '${{ parameters.aksNamespace }}'
+    command: 'upgrade'
+    chartType: 'FilePath'
+    chartPath: 'orc8r/cloud/helm/orc8r'
+    releaseName: 'orc8r'
+    valueFile: '${{ parameters.helmValsFilepath }}'
