@@ -27,6 +27,11 @@ openssl rsa -in controller-encrypted.key -out controller.key -passin pass:"$1"
 echo "Extracting public certificate from pfx..."
 openssl pkcs12 -in domain.pfx -clcerts -nokeys -out controller.crt -password pass:"$1"
 
+rm controller-encrypted.key
+rm domain.pfx
+rm domain-nopass.pem
+rm domain-nopass.pfx
+
 echo "*******************************************"
 
 echo "******Acquiring Certifier Certificate******"
@@ -49,6 +54,11 @@ openssl pkcs12 -in certifier.pfx -nocerts -out certifier-encrypted.key -passin p
 
 echo "Decrypting private key..."
 openssl rsa -in certifier-encrypted.key -out certifier.key -passin pass:"$1"
+
+rm certifier.pfx
+rm certifier-encrypted.key
+rm certifier-nopass.pem
+rm certifier-nopass.pfx
 
 echo "*****************************************"
 
@@ -73,6 +83,11 @@ openssl pkcs12 -in fluentd.pfx -nocerts -out fluentd-encrypted.key -passin pass:
 echo "Decrypting private key..."
 openssl rsa -in fluentd-encrypted.key -out fluentd.key -passin pass:"$1"
 
+rm fluentd.pfx
+rm fluentd-encrypted.key
+rm fluentd-nopass.pem
+rm fluentd-nopass.pfx
+
 echo "**************************************"
 
 echo "******Acquiring Bootstrapper Key******"
@@ -83,40 +98,36 @@ echo "*************************************"
 
 echo "******Acquiring Admin_operator Certificate******"
 
-echo "Downloading pfx (no password) from Key vault..."
-secretId=$(az keyvault certificate show --vault-name $2 --name admin-operator | jq -r ".sid")
-az keyvault secret download -f admin_operator-nopass.pfx --vault-name $2 --id $secretId --encoding base64
+certs=$(az keyvault certificate list --vault-name $2 | jq ".[].name")
 
-echo "Converting pfx (no password) to pem format..."
-openssl pkcs12 -in admin_operator-nopass.pfx -out admin_operator-nopass.pem -nodes -password pass:""
+if [[ "${certs[*]}" == *"admin-operator"* ]]; then
+    echo "admin-operator cert found in key vault!"
 
-echo "Converting pem to pfx with the password..."
-openssl pkcs12 -export -out admin_operator.pfx -in admin_operator-nopass.pem -password pass:"$1"
+    echo "Downloading pfx (no password) from Key vault..."
+    secretId=$(az keyvault certificate show --vault-name $2 --name admin-operator | jq -r ".sid")
+    echo $secretId
+    az keyvault secret download -f admin_operator-nopass.pfx --vault-name $2 --id $secretId --encoding base64
 
-echo "Converting pfx (with password) to pem..."
-openssl pkcs12 -in admin_operator.pfx -nokeys -out admin_operator.pem -nodes -password pass:"$1"
+    echo "Converting pfx (no password) to pem format..."
+    openssl pkcs12 -in admin_operator-nopass.pfx -out admin_operator-nopass.pem -nodes -password pass:""
 
-echo "Extracting private key from pfx..."
-openssl pkcs12 -in admin_operator.pfx -nocerts -out admin_operator-encrypted.key -passin pass:"$1" -passout pass:"$1"
+    echo "Converting pem to pfx with the password..."
+    openssl pkcs12 -export -out admin_operator.pfx -in admin_operator-nopass.pem -password pass:"$1"
 
-echo "Decrypting private key..."
-openssl rsa -in admin_operator-encrypted.key -out admin_operator.key.pem -passin pass:"$1"
+    echo "Converting pfx (with password) to pem..."
+    openssl pkcs12 -in admin_operator.pfx -nokeys -out admin_operator.pem -nodes -password pass:"$1"
+
+    echo "Extracting private key from pfx..."
+    openssl pkcs12 -in admin_operator.pfx -nocerts -out admin_operator-encrypted.key -passin pass:"$1" -passout pass:"$1"
+
+    echo "Decrypting private key..."
+    openssl rsa -in admin_operator-encrypted.key -out admin_operator.key.pem -passin pass:"$1"
+
+    rm admin_operator-nopass.pfx
+    rm admin_operator-nopass.pem
+    rm admin_operator-encrypted.key
+else
+    echo "admin-operator cert not found in key vault!"
+fi
 
 echo "**************************************"
-
-echo "Removing temporary files..."
-rm certifier.pfx
-rm certifier-encrypted.key
-rm certifier-nopass.pem
-rm certifier-nopass.pfx
-rm controller-encrypted.key
-rm fluentd.pfx
-rm fluentd-encrypted.key
-rm fluentd-nopass.pem
-rm fluentd-nopass.pfx
-rm domain.pfx
-rm domain-nopass.pem
-rm domain-nopass.pfx
-rm admin_operator-nopass.pfx
-rm admin_operator-nopass.pem
-rm admin_operator-encrypted.key
