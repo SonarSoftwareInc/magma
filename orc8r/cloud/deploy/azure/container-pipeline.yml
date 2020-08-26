@@ -39,7 +39,7 @@ parameters:
   - name: keyVaultName
     displayName: Key Vault Name
     type: string
-    default: sonar-prod-magma-01
+    default: sonar-stage-magma-02
 
 resources:
   repositories:
@@ -61,9 +61,9 @@ variables:
   - name: NMS_COMPOSE_PROJECT
     value: magmalte    
   - name: STAGE_BRANCH_PREFIX
-    value: azure-deployment-pipeline-refactor
+    value: azure-deployment
   - name: PROD_BRANCH
-    value: azure-deployment-pipeline-refactor
+    value: azure-deployment
 
 stages:
 - stage: Build_And_Publish

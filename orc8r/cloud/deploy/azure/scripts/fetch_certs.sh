@@ -117,6 +117,6 @@ rm fluentd-nopass.pfx
 rm domain.pfx
 rm domain-nopass.pem
 rm domain-nopass.pfx
-# rm admin_operator-nopass.pfx
-# rm admin_operator-nopass.pem
-# rm admin_operator-encrypted.key
+rm admin_operator-nopass.pfx
+rm admin_operator-nopass.pem
+rm admin_operator-encrypted.key
