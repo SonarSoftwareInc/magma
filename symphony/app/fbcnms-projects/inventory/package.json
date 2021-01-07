@@ -20,7 +20,7 @@
     "@material-ui/lab": "^4.0.0-alpha.30",
     "@material-ui/styles": "^4.0.0",
     "add": "^2.0.6",
-    "axios": "^0.18.0",
+    "axios": "^0.21.1",
     "classnames": "^2.2.5",
     "d3": "^5.9.2",
     "immutability-helper": "^2.9.0",

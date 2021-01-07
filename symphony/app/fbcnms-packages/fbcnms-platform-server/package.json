@@ -12,7 +12,7 @@
     "@fbcnms/types": "^0.1.0",
     "@fbcnms/util": "^0.1.0",
     "add": "^2.0.6",
-    "axios": "^0.18.0",
+    "axios": "^0.21.1",
     "bcryptjs": "^2.4.3",
     "connect-session-sequelize": "^6.0.0",
     "express": "^4.16.3",
